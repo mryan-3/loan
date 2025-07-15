@@ -1,6 +1,7 @@
 package com.ryanm.loan.controller;
 
 import com.ryanm.loan.dto.AuthResponse;
+import com.ryanm.loan.dto.ChangePasswordRequest;
 import com.ryanm.loan.dto.UserLoginRequest;
 import com.ryanm.loan.dto.UserRegistrationRequest;
 import com.ryanm.loan.dto.UserResponse;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -50,5 +52,23 @@ public class UserController {
         // In stateless JWT, logout is handled on the client by deleting the token.
         log.info("API: User logout (stateless, no server action)");
         return ResponseEntity.ok().build();
+    }
+
+    // 5. Change Password
+    @PatchMapping("/password")
+    public ResponseEntity<Void> changePassword(@AuthenticationPrincipal UserDetails userDetails,
+                                               @Valid @RequestBody ChangePasswordRequest request) {
+        log.info("API: Change password for user: {}", userDetails.getUsername());
+        userService.changePassword(userDetails.getUsername(), request);
+        return ResponseEntity.ok().build();
+    }
+
+    // 6. Change Profile Image
+    @PatchMapping("/image")
+    public ResponseEntity<UserResponse> updateProfileImage(@AuthenticationPrincipal UserDetails userDetails,
+                                                          @RequestParam("file") MultipartFile file) {
+        log.info("API: Update profile image for user: {}", userDetails.getUsername());
+        UserResponse response = userService.updateProfileImage(userDetails.getUsername(), file);
+        return ResponseEntity.ok(response);
     }
 } 

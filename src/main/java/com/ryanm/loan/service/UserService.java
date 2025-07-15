@@ -1,6 +1,7 @@
 package com.ryanm.loan.service;
 
 import com.ryanm.loan.dto.AuthResponse;
+import com.ryanm.loan.dto.ChangePasswordRequest;
 import com.ryanm.loan.dto.UserLoginRequest;
 import com.ryanm.loan.dto.UserRegistrationRequest;
 import com.ryanm.loan.dto.UserResponse;
@@ -18,6 +19,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
 
 import java.time.format.DateTimeFormatter;
 
@@ -92,6 +100,65 @@ public class UserService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", email));
         return mapToDto(user);
+    }
+
+    public void changePassword(String email, ChangePasswordRequest request) {
+        log.info("User password change attempt: {}", email);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", email));
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            log.warn("Invalid current password for user: {}", email);
+            throw new ValidationException("Current password is incorrect");
+        }
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        log.info("User password changed successfully: {}", email);
+    }
+
+    public UserResponse updateProfileImage(String email, MultipartFile file) {
+        log.info("User profile image upload attempt: {}", email);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", email));
+
+        // Validate file
+        if (file.isEmpty()) {
+            throw new ValidationException("No file uploaded");
+        }
+        if (!file.getContentType().startsWith("image/")) {
+            throw new ValidationException("Only image files are allowed");
+        }
+        if (file.getSize() > 2 * 1024 * 1024) { // 2MB limit
+            throw new ValidationException("File size exceeds 2MB limit");
+        }
+
+        // Save file
+        String uploadDir = "uploads/profile-images";
+        String extension = file.getOriginalFilename() != null && file.getOriginalFilename().contains(".")
+                ? file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf('.'))
+                : "";
+        String filename = UUID.randomUUID() + extension;
+        Path uploadPath = Paths.get(uploadDir);
+        try {
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+            Path filePath = uploadPath.resolve(filename);
+            file.transferTo(filePath.toFile());
+            // Optionally, delete old image file
+            if (user.getImage() != null && !user.getImage().isEmpty()) {
+                File oldFile = new File(user.getImage());
+                if (oldFile.exists()) {
+                    oldFile.delete();
+                }
+            }
+            user.setImage(filePath.toString());
+            userRepository.save(user);
+            log.info("User profile image updated: {}", email);
+            return mapToDto(user);
+        } catch (IOException e) {
+            log.error("Error saving profile image for user {}: {}", email, e.getMessage(), e);
+            throw new ValidationException("Failed to save image");
+        }
     }
 
     // For Spring Security
