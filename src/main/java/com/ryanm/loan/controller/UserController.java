@@ -71,4 +71,12 @@ public class UserController {
         UserResponse response = userService.updateProfileImage(userDetails.getUsername(), file);
         return ResponseEntity.ok(response);
     }
+
+    // 7. Delete Account
+    @DeleteMapping("")
+    public ResponseEntity<Void> deleteAccount(@AuthenticationPrincipal UserDetails userDetails) {
+        log.info("API: Delete account for user: {}", userDetails.getUsername());
+        userService.deleteAccount(userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
 } 

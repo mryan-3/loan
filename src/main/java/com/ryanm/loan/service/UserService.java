@@ -161,6 +161,21 @@ public class UserService implements UserDetailsService {
         }
     }
 
+    public void deleteAccount(String email) {
+        log.info("User account delete attempt: {}", email);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", email));
+        // Delete profile image file if exists
+        if (user.getImage() != null && !user.getImage().isEmpty()) {
+            File oldFile = new File(user.getImage());
+            if (oldFile.exists()) {
+                oldFile.delete();
+            }
+        }
+        userRepository.delete(user);
+        log.info("User account deleted: {}", email);
+    }
+
     // For Spring Security
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
