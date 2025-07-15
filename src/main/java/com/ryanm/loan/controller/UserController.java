@@ -2,6 +2,7 @@ package com.ryanm.loan.controller;
 
 import com.ryanm.loan.dto.AuthResponse;
 import com.ryanm.loan.dto.ChangePasswordRequest;
+import com.ryanm.loan.dto.RefreshTokenRequest;
 import com.ryanm.loan.dto.UserLoginRequest;
 import com.ryanm.loan.dto.UserRegistrationRequest;
 import com.ryanm.loan.dto.UserResponse;
@@ -78,5 +79,13 @@ public class UserController {
         log.info("API: Delete account for user: {}", userDetails.getUsername());
         userService.deleteAccount(userDetails.getUsername());
         return ResponseEntity.noContent().build();
+    }
+
+    // 8. Refresh Access Token
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refreshToken(@RequestBody RefreshTokenRequest request) {
+        log.info("API: Refresh access token");
+        AuthResponse response = userService.refreshToken(request.getRefreshToken());
+        return ResponseEntity.ok(response);
     }
 } 

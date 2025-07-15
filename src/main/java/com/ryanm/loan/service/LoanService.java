@@ -6,6 +6,7 @@ import com.ryanm.loan.dto.LoanReviewRequest;
 import com.ryanm.loan.dto.LoanUpdateRequest;
 import com.ryanm.loan.exception.ResourceNotFoundException;
 import com.ryanm.loan.exception.ValidationException;
+import com.ryanm.loan.exception.BusinessException;
 import com.ryanm.loan.model.Loan;
 import com.ryanm.loan.model.User;
 import com.ryanm.loan.repository.LoanRepository;
@@ -73,12 +74,24 @@ public class LoanService {
     @Transactional
     public LoanResponse approveLoan(Long loanId, String managerEmail, LoanReviewRequest request) {
         log.info("Manager {} approving loan {}", managerEmail, loanId);
+        if (request.getStatus() == null || request.getStatus().isBlank()) {
+            throw new ValidationException("Status is required for approval");
+        }
+        if (request.getReviewComment() == null || request.getReviewComment().isBlank()) {
+            throw new ValidationException("Review comment is required for approval");
+        }
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new ResourceNotFoundException("Loan", loanId.toString()));
         User manager = userRepository.findByEmail(managerEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User", managerEmail));
         if (!"ACCEPTED".equalsIgnoreCase(request.getStatus())) {
             throw new ValidationException("Status must be ACCEPTED for approval");
+        }
+        if (loan.getStatus() == Loan.Status.ACCEPTED) {
+            throw new BusinessException("Loan is already approved.");
+        }
+        if (loan.getStatus() == Loan.Status.REJECTED) {
+            throw new BusinessException("Cannot approve a loan that has already been rejected.");
         }
         loan.setStatus(Loan.Status.ACCEPTED);
         loan.setReviewedBy(manager);
@@ -91,12 +104,24 @@ public class LoanService {
     @Transactional
     public LoanResponse rejectLoan(Long loanId, String managerEmail, LoanReviewRequest request) {
         log.info("Manager {} rejecting loan {}", managerEmail, loanId);
+        if (request.getStatus() == null || request.getStatus().isBlank()) {
+            throw new ValidationException("Status is required for rejection");
+        }
+        if (request.getReviewComment() == null || request.getReviewComment().isBlank()) {
+            throw new ValidationException("Review comment is required for rejection");
+        }
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new ResourceNotFoundException("Loan", loanId.toString()));
         User manager = userRepository.findByEmail(managerEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User", managerEmail));
         if (!"REJECTED".equalsIgnoreCase(request.getStatus())) {
             throw new ValidationException("Status must be REJECTED for rejection");
+        }
+        if (loan.getStatus() == Loan.Status.ACCEPTED) {
+            throw new BusinessException("Cannot reject a loan that has already been approved.");
+        }
+        if (loan.getStatus() == Loan.Status.REJECTED) {
+            throw new BusinessException("Loan is already rejected.");
         }
         loan.setStatus(Loan.Status.REJECTED);
         loan.setReviewedBy(manager);

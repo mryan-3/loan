@@ -90,6 +90,23 @@ public class UserService implements UserDetailsService {
                 .build();
     }
 
+    public AuthResponse refreshToken(String refreshToken) {
+        try {
+            String newAccessToken = jwtService.refreshAccessToken(refreshToken);
+            Long userId = jwtService.extractUserId(refreshToken);
+            User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId.toString()));
+            return AuthResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(refreshToken)
+                .user(mapToDto(user))
+                .build();
+        } catch (Exception e) {
+            log.warn("Failed to refresh token: {}", e.getMessage());
+            throw new AuthenticationException("Invalid or expired refresh token");
+        }
+    }
+
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", id.toString()));
