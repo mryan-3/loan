@@ -162,6 +162,7 @@ public class LoanService {
                 .reviewComment(loan.getReviewComment())
                 .createdAt(loan.getCreatedAt() != null ? loan.getCreatedAt().format(FORMATTER) : null)
                 .updatedAt(loan.getUpdatedAt() != null ? loan.getUpdatedAt().format(FORMATTER) : null)
+                .userDeleted(loan.getUser().getDeletedAt() != null)
                 .build();
     }
 } 

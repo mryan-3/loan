@@ -20,4 +20,5 @@ public class LoanResponse {
     private String reviewComment;
     private String createdAt;
     private String updatedAt;
+    private boolean userDeleted;
 } 

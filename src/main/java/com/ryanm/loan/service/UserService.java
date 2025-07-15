@@ -97,14 +97,14 @@ public class UserService implements UserDetailsService {
     }
 
     public UserResponse getUserByEmail(String email) {
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailAndDeletedFalse(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", email));
         return mapToDto(user);
     }
 
     public void changePassword(String email, ChangePasswordRequest request) {
         log.info("User password change attempt: {}", email);
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailAndDeletedFalse(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", email));
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             log.warn("Invalid current password for user: {}", email);
@@ -163,7 +163,7 @@ public class UserService implements UserDetailsService {
 
     public void deleteAccount(String email) {
         log.info("User account delete attempt: {}", email);
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailAndDeletedFalse(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", email));
         // Delete profile image file if exists
         if (user.getImage() != null && !user.getImage().isEmpty()) {
@@ -172,8 +172,10 @@ public class UserService implements UserDetailsService {
                 oldFile.delete();
             }
         }
-        userRepository.delete(user);
-        log.info("User account deleted: {}", email);
+        user.setDeleted(true);
+        user.setDeletedAt(java.time.LocalDateTime.now());
+        userRepository.save(user);
+        log.info("User account soft deleted: {}", email);
     }
 
     // For Spring Security
