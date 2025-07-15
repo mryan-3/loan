@@ -38,7 +38,8 @@ public class SecurityConfig {
                     "/api/v1/users/refresh",
                     "/api/v1/users/logout",
                     "/swagger-ui/**",
-                    "/v3/api-docs/**"
+                    "/v3/api-docs/**",
+                    "/h2-console/**"
                 ).permitAll()
                 .requestMatchers("/api/v1/loans/**").authenticated()
                 .requestMatchers("/api/v1/users/**").authenticated()

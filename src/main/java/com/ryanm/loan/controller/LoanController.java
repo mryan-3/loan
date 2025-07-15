@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -34,6 +35,7 @@ public class LoanController {
 
     // 2. List all loans (manager, auditor)
     @GetMapping("")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<Page<LoanResponse>> getAllLoans(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -55,6 +57,7 @@ public class LoanController {
 
     // 4. Approve a loan (manager)
     @PostMapping("/{id}/approve")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<LoanResponse> approveLoan(@AuthenticationPrincipal UserDetails userDetails,
                                                     @PathVariable Long id,
                                                     @Valid @RequestBody LoanReviewRequest request) {
@@ -65,6 +68,7 @@ public class LoanController {
 
     // 5. Reject a loan (manager)
     @PostMapping("/{id}/reject")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<LoanResponse> rejectLoan(@AuthenticationPrincipal UserDetails userDetails,
                                                    @PathVariable Long id,
                                                    @Valid @RequestBody LoanReviewRequest request) {
